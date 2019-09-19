@@ -6,7 +6,7 @@ ENV ELASTICSEARCH_VERSION=6.8.3
 RUN git clone https://github.com/WorksApplications/elasticsearch-sudachi.git -b ${ES_SUDACHI_VERSION} --depth 1 && \
     cd elasticsearch-sudachi && mvn clean package -D elasticsearch.version=${ELASTICSEARCH_VERSION}
 
-FROM openjdk:8u212-alpine
+FROM adoptopenjdk/openjdk8:jre8u222-b10-alpine
 
 ENV ES_VERSION 6.8.3
 ENV YQ_VERSION 2.4.0
