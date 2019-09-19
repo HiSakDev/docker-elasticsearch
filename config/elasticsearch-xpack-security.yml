@@ -1,0 +1,6 @@
+xpack.security:
+  transport.ssl:
+    enabled: true
+    verification_mode: certificate
+    keystore.path: certs/elastic.p12
+    truststore.path: certs/elastic.p12
