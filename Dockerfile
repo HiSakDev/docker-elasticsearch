@@ -76,12 +76,15 @@ ENV NODE_NAME="" \
     KEY_PASS=""
 
 COPY --from=0 /elasticsearch-sudachi/build/distributions/analysis-sudachi-6.8.17-2.1.0.zip /
-RUN elasticsearch-plugin install --batch ingest-attachment && \
+# Fix Docker Hub Automated Build cannot check java binary execute permission
+RUN sed -i -e 's/ -x / -f /' /elasticsearch/bin/elasticsearch-env && \
+    elasticsearch-plugin install --batch ingest-attachment && \
     elasticsearch-plugin install --batch analysis-icu && \
     elasticsearch-plugin install --batch analysis-kuromoji && \
     elasticsearch-plugin install --batch repository-s3 && \
     elasticsearch-plugin install --batch file:///analysis-sudachi-6.8.17-2.1.0.zip && \
-    rm -f /analysis-sudachi-6.8.17-2.1.0.zip
+    rm -f /analysis-sudachi-6.8.17-2.1.0.zip && \
+    sed -i -e 's/ -f / -x /' /elasticsearch/bin/elasticsearch-env
 
 # Add Elasticsearch configuration files
 ADD config /elasticsearch/config
