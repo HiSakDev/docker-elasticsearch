@@ -18,6 +18,24 @@ if [ "${XPACK_SECURITY_ENABLED}" == "true" ]; then
   chmod $ORIGINAL_PERMISSION $CONFIG_FILE
 fi
 
+if [ -n "$NODE_ROLES" ];then
+  yq write -i $CONFIG_FILE node.roles $NODE_ROLES
+else
+  roles=()
+  if [[ "$NODE_MASTER" == true ]]; then
+    roles+=("master")
+  fi
+  if [[ "$NODE_DATA" == true ]]; then
+    roles+=("data")
+  fi
+  if [[ "$NODE_INGEST" == true ]]; then
+    roles+=("ingest")
+  fi
+  if [ ${#roles[@]} -ne 0 ]; then
+    yq write -i $CONFIG_FILE node.roles "$(IFS=","; echo "${roles[*]}")"
+  fi
+fi
+
 if [ -d "$CUSTOM_CONFIG_DIR" ]; then
 
   configs=($(find $CUSTOM_CONFIG_DIR -maxdepth 1 -name "*.yaml"))

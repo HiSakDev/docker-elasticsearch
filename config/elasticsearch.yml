@@ -3,10 +3,7 @@ cluster:
   initial_master_nodes: ${INITIAL_MASTER_NODES}
 
 node:
-  master: ${NODE_MASTER}
-  data: ${NODE_DATA}
   name: ${NODE_NAME}
-  ingest: ${NODE_INGEST}
 
 network.host: 0.0.0.0
 

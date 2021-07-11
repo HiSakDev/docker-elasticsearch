@@ -55,6 +55,10 @@ fi
 
 export NODE_NAME=${NODE_NAME}
 
+if [ -z "${INITIAL_MASTER_NODES}" ]; then
+    export INITIAL_MASTER_NODES=${NODE_NAME}
+fi
+
 # remove x-pack-ml module
 rm -rf /elasticsearch/modules/x-pack/x-pack-ml
 rm -rf /elasticsearch/modules/x-pack-ml

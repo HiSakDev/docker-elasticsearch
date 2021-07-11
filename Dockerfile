@@ -85,6 +85,9 @@ RUN sed -i -e 's/ -x / -f /' /elasticsearch/bin/elasticsearch-env && \
     elasticsearch-plugin install --batch repository-s3 && \
     elasticsearch-plugin install --batch file:///analysis-sudachi-7.13.3-2.1.0.zip && \
     rm -f /analysis-sudachi-7.13.3-2.1.0.zip && \
+    curl -o sudachi-dictionary.zip -Lskj http://sudachi.s3-website-ap-northeast-1.amazonaws.com/sudachidict/sudachi-dictionary-20210608-core.zip && \
+    unzip -d /elasticsearch/config/sudachi -j sudachi-dictionary.zip && \
+    rm -f sudachi-dictionary.zip && \
     sed -i -e 's/ -f / -x /' /elasticsearch/bin/elasticsearch-env
 
 # Add Elasticsearch configuration files
