@@ -1,15 +1,17 @@
-FROM maven:3.6-jdk-8
+FROM adoptopenjdk/openjdk11:alpine
 
-ENV ES_SUDACHI_VERSION=v7.2.0-1.3.1
-ENV ELASTICSEARCH_VERSION=7.2.1
+ENV ES_SUDACHI_VERSION=v2.1.0
+ENV ELASTICSEARCH_VERSION=7.13.3
 
-RUN git clone https://github.com/WorksApplications/elasticsearch-sudachi.git -b ${ES_SUDACHI_VERSION} --depth 1 && \
-    cd elasticsearch-sudachi && mvn clean package -D elasticsearch.version=${ELASTICSEARCH_VERSION}
+RUN apk add --no-cache git && \
+    git clone https://github.com/WorksApplications/elasticsearch-sudachi.git -b ${ES_SUDACHI_VERSION} --depth 1 && \
+    cd elasticsearch-sudachi && \
+    ./gradlew -PelasticsearchVersion=${ELASTICSEARCH_VERSION} build
 
-FROM adoptopenjdk/openjdk11:jre-11.0.4_11-alpine
+FROM adoptopenjdk/openjdk11:alpine
 
-ENV ES_VERSION 7.2.1
-ENV YQ_VERSION 2.4.0
+ENV ES_VERSION 7.13.3
+ENV YQ_VERSION 2.4.1
 
 ENV DOWNLOAD_URL "https://artifacts.elastic.co/downloads/elasticsearch"
 ENV ES_TARBAL "${DOWNLOAD_URL}/elasticsearch-${ES_VERSION}-linux-x86_64.tar.gz"
@@ -27,8 +29,9 @@ RUN apk add --no-cache -t .build-deps gnupg openssl \
 	if [ "$ES_TARBALL_ASC" ]; then \
 		curl -o elasticsearch.tar.gz.asc -Lskj "$ES_TARBALL_ASC"; \
 		export GNUPGHOME="$(mktemp -d)"; \
-		gpg --keyserver ha.pool.sks-keyservers.net --recv-keys "$GPG_KEY"; \
+		gpg --keyserver keyserver.ubuntu.com --recv-keys "$GPG_KEY"; \
 		gpg --batch --verify elasticsearch.tar.gz.asc elasticsearch.tar.gz; \
+    [ $? -eq 0 ] || exit 1; \
 		rm -r "$GNUPGHOME" elasticsearch.tar.gz.asc; \
 	fi; \
   tar -xf elasticsearch.tar.gz \
@@ -53,6 +56,7 @@ WORKDIR /elasticsearch
 ENV NODE_NAME="" \
     ES_TMPDIR="/elasticsearch/tmp" \
     ES_JAVA_OPTS="-Xms512m -Xmx512m" \
+    ES_JAVA_HOME="$JAVA_HOME" \
     CLUSTER_NAME="elasticsearch" \
     NODE_MASTER=true \
     NODE_DATA=true \
@@ -72,13 +76,16 @@ ENV NODE_NAME="" \
     REPO_LOCATIONS="" \
     KEY_PASS=""
 
-COPY --from=0 /elasticsearch-sudachi/target/releases/analysis-sudachi-elasticsearch7.2-1.3.1.zip /
-RUN elasticsearch-plugin install --batch ingest-attachment && \
+COPY --from=0 /elasticsearch-sudachi/build/distributions/analysis-sudachi-7.13.3-2.1.0.zip /
+# Fix Docker Hub Automated Build cannot check java binary execute permission
+RUN sed -i -e 's/ -x / -f /' /elasticsearch/bin/elasticsearch-env && \
+    elasticsearch-plugin install --batch ingest-attachment && \
     elasticsearch-plugin install --batch analysis-icu && \
     elasticsearch-plugin install --batch analysis-kuromoji && \
     elasticsearch-plugin install --batch repository-s3 && \
-    elasticsearch-plugin install --batch file:///analysis-sudachi-elasticsearch7.2-1.3.1.zip && \
-    rm -f /analysis-sudachi-elasticsearch7.2-1.3.1.zip
+    elasticsearch-plugin install --batch file:///analysis-sudachi-7.13.3-2.1.0.zip && \
+    rm -f /analysis-sudachi-7.13.3-2.1.0.zip && \
+    sed -i -e 's/ -f / -x /' /elasticsearch/bin/elasticsearch-env
 
 # Add Elasticsearch configuration files
 ADD config /elasticsearch/config
