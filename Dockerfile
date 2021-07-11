@@ -1,15 +1,17 @@
-FROM maven:3.6-jdk-8
+FROM adoptopenjdk/openjdk11:alpine
 
-ENV ES_SUDACHI_VERSION=v6.8.1-1.3.1
-ENV ELASTICSEARCH_VERSION=6.8.3
+ENV ES_SUDACHI_VERSION=v2.1.0-es6.8
+ENV ELASTICSEARCH_VERSION=6.8.17
 
-RUN git clone https://github.com/WorksApplications/elasticsearch-sudachi.git -b ${ES_SUDACHI_VERSION} --depth 1 && \
-    cd elasticsearch-sudachi && mvn clean package -D elasticsearch.version=${ELASTICSEARCH_VERSION}
+RUN apk add --no-cache git && \
+    git clone https://github.com/WorksApplications/elasticsearch-sudachi.git -b ${ES_SUDACHI_VERSION} --depth 1 && \
+    cd elasticsearch-sudachi && \
+    ./gradlew -PelasticsearchVersion=${ELASTICSEARCH_VERSION} build
 
-FROM adoptopenjdk/openjdk8:jre8u222-b10-alpine
+FROM adoptopenjdk/openjdk11:alpine
 
-ENV ES_VERSION 6.8.3
-ENV YQ_VERSION 2.4.0
+ENV ES_VERSION 6.8.17
+ENV YQ_VERSION 2.4.1
 
 ENV DOWNLOAD_URL "https://artifacts.elastic.co/downloads/elasticsearch"
 ENV ES_TARBAL "${DOWNLOAD_URL}/elasticsearch-${ES_VERSION}.tar.gz"
@@ -27,8 +29,9 @@ RUN apk add --no-cache -t .build-deps gnupg openssl \
 	if [ "$ES_TARBALL_ASC" ]; then \
 		curl -o elasticsearch.tar.gz.asc -Lskj "$ES_TARBALL_ASC"; \
 		export GNUPGHOME="$(mktemp -d)"; \
-		gpg --keyserver ha.pool.sks-keyservers.net --recv-keys "$GPG_KEY"; \
+		gpg --keyserver keyserver.ubuntu.com --recv-keys "$GPG_KEY"; \
 		gpg --batch --verify elasticsearch.tar.gz.asc elasticsearch.tar.gz; \
+    [ $? -eq 0 ] || exit 1; \
 		rm -r "$GNUPGHOME" elasticsearch.tar.gz.asc; \
 	fi; \
   tar -xf elasticsearch.tar.gz \
@@ -72,13 +75,13 @@ ENV NODE_NAME="" \
     REPO_LOCATIONS="" \
     KEY_PASS=""
 
-COPY --from=0 /elasticsearch-sudachi/target/releases/analysis-sudachi-elasticsearch6.8-1.3.1.zip /
+COPY --from=0 /elasticsearch-sudachi/build/distributions/analysis-sudachi-6.8.17-2.1.0.zip /
 RUN elasticsearch-plugin install --batch ingest-attachment && \
     elasticsearch-plugin install --batch analysis-icu && \
     elasticsearch-plugin install --batch analysis-kuromoji && \
     elasticsearch-plugin install --batch repository-s3 && \
-    elasticsearch-plugin install --batch file:///analysis-sudachi-elasticsearch6.8-1.3.1.zip && \
-    rm -f /analysis-sudachi-elasticsearch6.8-1.3.1.zip
+    elasticsearch-plugin install --batch file:///analysis-sudachi-6.8.17-2.1.0.zip && \
+    rm -f /analysis-sudachi-6.8.17-2.1.0.zip
 
 # Add Elasticsearch configuration files
 ADD config /elasticsearch/config
