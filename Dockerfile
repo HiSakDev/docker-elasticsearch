@@ -1,7 +1,7 @@
 FROM adoptopenjdk/openjdk11:alpine
 
 ENV ES_SUDACHI_VERSION=v2.1.0
-ENV ELASTICSEARCH_VERSION=7.13.3
+ENV ELASTICSEARCH_VERSION=7.17.8
 
 RUN apk add --no-cache git && \
     git clone https://github.com/WorksApplications/elasticsearch-sudachi.git -b ${ES_SUDACHI_VERSION} --depth 1 && \
@@ -10,7 +10,7 @@ RUN apk add --no-cache git && \
 
 FROM adoptopenjdk/openjdk11:alpine
 
-ENV ES_VERSION 7.13.3
+ENV ES_VERSION 7.17.8
 ENV YQ_VERSION 2.4.1
 
 ENV DOWNLOAD_URL "https://artifacts.elastic.co/downloads/elasticsearch"
@@ -76,15 +76,15 @@ ENV NODE_NAME="" \
     REPO_LOCATIONS="" \
     KEY_PASS=""
 
-COPY --from=0 /elasticsearch-sudachi/build/distributions/analysis-sudachi-7.13.3-2.1.0.zip /
+COPY --from=0 /elasticsearch-sudachi/build/distributions/analysis-sudachi-7.17.8-2.1.0.zip /
 # Fix Docker Hub Automated Build cannot check java binary execute permission
 RUN sed -i -e 's/ -x / -f /' /elasticsearch/bin/elasticsearch-env && \
     elasticsearch-plugin install --batch ingest-attachment && \
     elasticsearch-plugin install --batch analysis-icu && \
     elasticsearch-plugin install --batch analysis-kuromoji && \
     elasticsearch-plugin install --batch repository-s3 && \
-    elasticsearch-plugin install --batch file:///analysis-sudachi-7.13.3-2.1.0.zip && \
-    rm -f /analysis-sudachi-7.13.3-2.1.0.zip && \
+    elasticsearch-plugin install --batch file:///analysis-sudachi-7.17.8-2.1.0.zip && \
+    rm -f /analysis-sudachi-7.17.8-2.1.0.zip && \
     curl -o sudachi-dictionary.zip -Lskj http://sudachi.s3-website-ap-northeast-1.amazonaws.com/sudachidict/sudachi-dictionary-20210608-core.zip && \
     unzip -d /elasticsearch/config/sudachi -j sudachi-dictionary.zip && \
     rm -f sudachi-dictionary.zip && \
